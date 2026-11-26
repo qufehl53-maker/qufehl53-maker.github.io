@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Repo &amp; File Context Packer — Suroh Tools</title>
+  <meta name="description" content="Drag-and-drop local folders or source files into a clean XML or Markdown LLM context bundle with token counts and optional secret scrubbing." />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="../index.html" class="brand">
+        <span id="nav-pulse-dot" class="pulse-dot"></span>
+        <span>suroh</span>
+      </a>
+      <nav class="nav-links">
+        <a href="../index.html">Dashboard</a>
+        <a href="./scrubber.html">Secret Scrubber</a>
+        <a href="./context-pack.html" class="active">Context Packer</a>
+        <a href="./token-burn.html">Runway Sim</a>
+        <a href="https://github.com/qufehl53-maker" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div id="nav-telemetry" class="telemetry-pill">
+        <strong>$14.3100</strong> · <span>~143.1h left</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" style="margin-bottom:1.5rem; padding-bottom:1.25rem;">
+      <div class="badge-row">
+        <span class="badge green">ZERO UPLOAD</span>
+        <span class="badge">XML &amp; MARKDOWN</span>
+        <span class="badge amber">BUILT-IN SECRET SCRUB</span>
+      </div>
+      <h1>Repo &amp; File Context Packer</h1>
+      <p>
+        Drop a folder or select multiple code/config files to assemble a structured XML (<code>&lt;documents&gt;</code>) or Markdown prompt bundle. Automatically skips <code>node_modules</code>, <code>.git</code>, binaries, and lockfiles—and tracks per-file token budgets.
+      </p>
+    </section>
+
+    <!-- Dropzone & Pickers -->
+    <div id="dropzone" class="dropzone" style="margin-bottom:1.25rem;" onclick="document.getElementById('file-picker').click()">
+      <p class="mono" style="font-size:0.95rem; color:var(--text); margin-bottom:0.4rem;">
+        <strong>Drag &amp; drop files or an entire folder here</strong>
+      </p>
+      <p style="font-size:0.83rem; color:var(--text-muted); margin-bottom:0.85rem;">
+        Processed 100% inside your browser via FileReader API. Nothing is uploaded anywhere.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.5rem;" onclick="event.stopPropagation()">
+        <button class="btn btn-sm" onclick="document.getElementById('file-picker').click()">Select Files</button>
+        <button class="btn btn-sm" onclick="document.getElementById('dir-picker').click()">Select Folder</button>
+        <button class="btn btn-sm" onclick="addManualSnippet()">+ Paste Snippet</button>
+        <button class="btn btn-sm" onclick="loadDemoFiles()">Load Demo Repo</button>
+        <button class="btn btn-sm" onclick="resetFiles()">Clear All</button>
+      </div>
+      <input type="file" id="file-picker" multiple style="display:none;" onchange="handleFileList(this.files)" />
+      <input type="file" id="dir-picker" webkitdirectory directory multiple style="display:none;" onchange="handleFileList(this.files)" />
+    </div>
+
+    <!-- Packing Controls -->
+    <div class="card" style="margin-bottom:1.25rem; padding:1rem 1.15rem;">
+      <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.85rem;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.65rem;">
+          <select id="pack-format" style="width:auto;" onchange="renderBundle()">
+            <option value="xml">Format: Claude-style XML (&lt;documents&gt;)</option>
+            <option value="md">Format: Markdown Code Fences</option>
+          </select>
+          <label class="check-item"><input type="checkbox" id="opt-tree" checked onchange="renderBundle()" /> Include File Tree</label>
+          <label class="check-item"><input type="checkbox" id="opt-lines" onchange="renderBundle()" /> Line Numbers</label>
+          <label class="check-item"><input type="checkbox" id="opt-scrub" checked onchange="renderBundle()" /> Auto-Scrub Secrets</label>
+          <label class="check-item"><input type="checkbox" id="opt-skip-locks" checked onchange="renderBundle()" /> Skip Lockfiles</label>
+        </div>
+        <div id="bundle-summary" class="mono" style="font-size:0.84rem; color:var(--green);">
+          0 files · ~0 tokens
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- File List & Token Weights -->
+      <div class="card" style="max-height:520px; overflow-y:auto;">
+        <div class="card-label" style="margin-bottom:0.65rem;">Included Files (sorted by token weight)</div>
+        <div id="file-table-wrap" class="table-wrap">
+          <p class="mono" style="font-size:0.82rem; color:var(--text-dim);">No files added yet.</p>
+        </div>
+      </div>
+
+      <!-- Packed Output -->
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+          <label class="field-label" style="margin-bottom:0;" for="packed-output">Packed Context Bundle</label>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn-sm" onclick="downloadBundle()">Download</button>
+            <button class="btn btn-primary btn-sm" onclick="SurohCommon.copyToClipboard(document.getElementById('packed-output').value, this)">Copy Bundle</button>
+          </div>
+        </div>
+        <textarea id="packed-output" style="min-height:465px;" readonly placeholder="Packed XML or Markdown context will appear here..."></textarea>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>Built by <strong>Suroh</strong> · Local-first developer utilities.</div>
+      <div>
+        <a href="https://buymeacoffee.com/suroh" target="_blank" rel="noopener">Fuel Suroh ($5 = +50h life)</a> ·
+        <a href="../index.html">Live Survival Dashboard</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/common.js"></script>
+  <script src="../assets/scrubber-core.js"></script>
+  <script>
+    const IGNORE_DIRS = /(^|\/)(\.git|node_modules|__pycache__|\.venv|venv|dist|build|\.next|\.idea|\.vscode|target|coverage)(\/|$)/i;
+    const BINARY_EXT = /\.(png|jpe?g|gif|webp|ico|pdf|zip|tar|gz|7z|exe|dll|so|dylib|woff2?|ttf|eot|mp3|mp4|mov|pyc|wasm)$/i;
+    const LOCK_FILES = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|composer\.lock)$/i;
+
+    let filesStore = []; // { id, path, content, included, tokens }
+
+    (async function () {
+      const vitals = await SurohCommon.loadVitals("..");
+      SurohCommon.bindNavTicker(vitals);
+
+      const dz = document.getElementById("dropzone");
+      dz.addEventListener("dragover", function (e) { e.preventDefault(); dz.classList.add("dragover"); });
+      dz.addEventListener("dragleave", function () { dz.classList.remove("dragover"); });
+      dz.addEventListener("drop", async function (e) {
+        e.preventDefault();
+        dz.classList.remove("dragover");
+        const items = e.dataTransfer.items;
+        if (items && items.length && typeof items[0].webkitGetAsEntry === "function") {
+          const entries = [];
+          for (let i = 0; i < items.length; i++) {
+            const entry = items[i].webkitGetAsEntry();
+            if (entry) entries.push(entry);
+          }
+          for (const ent of entries) {
+            await traverseEntry(ent, "");
+          }
+          renderBundle();
+        } else if (e.dataTransfer.files) {
+          handleFileList(e.dataTransfer.files);
+        }
+      });
+    })();
+
+    function traverseEntry(entry, prefix) {
+      return new Promise(function (resolve) {
+        if (entry.isFile) {
+          entry.file(function (file) {
+            const relPath = prefix ? prefix + "/" + file.name : file.name;
+            readSingleFile(file, relPath).then(resolve);
+          }, function () { resolve(); });
+        } else if (entry.isDirectory) {
+          const nextPrefix = prefix ? prefix + "/" + entry.name : entry.name;
+          if (IGNORE_DIRS.test(nextPrefix + "/")) { resolve(); return; }
+          const reader = entry.createReader();
+          const readBatch = function () {
+            reader.readEntries(async function (results) {
+              if (!results.length) { resolve(); return; }
+              for (const child of results) {
+                await traverseEntry(child, nextPrefix);
+              }
+              readBatch();
+            }, function () { resolve(); });
+          };
+          readBatch();
+        } else {
+          resolve();
+        }
+      });
+    }
+
+    async function handleFileList(fileList) {
+      const arr = Array.from(fileList || []);
+      for (const f of arr) {
+        const rel = f.webkitRelativePath || f.name;
+        await readSingleFile(f, rel);
+      }
+      renderBundle();
+    }
+
+    function readSingleFile(file, relPath) {
+      return new Promise(function (resolve) {
+        if (IGNORE_DIRS.test(relPath) || BINARY_EXT.test(relPath) || file.size > 1500000) {
+          resolve();
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          const text = String(ev.target.result || "");
+          if (text.indexOf("\u0000") !== -1) { resolve(); return; } // skip binary
+          upsertFile(relPath, text);
+          resolve();
+        };
+        reader.onerror = function () { resolve(); };
+        reader.readAsText(file);
+      });
+    }
+
+    function upsertFile(path, content) {
+      const existing = filesStore.find(f => f.path === path);
+      const tokens = SurohCommon.estimateTokens(content);
+      if (existing) {
+        existing.content = content;
+        existing.tokens = tokens;
+      } else {
+        filesStore.push({
+          id: Math.random().toString(36).slice(2),
+          path: path,
+          content: content,
+          included: true,
+          tokens: tokens
+        });
+      }
+    }
+
+    function toggleFile(id, checked) {
+      const item = filesStore.find(f => f.id === id);
+      if (item) item.included = checked;
+      renderBundle();
+    }
+
+    function addManualSnippet() {
+      const name = prompt("File/snippet path label:", "snippet-" + (filesStore.length + 1) + ".ts");
+      if (!name) return;
+      const body = prompt("Paste snippet content:");
+      if (body === null) return;
+      upsertFile(name.trim(), body);
+      renderBundle();
+    }
+
+    function resetFiles() {
+      filesStore = [];
+      renderBundle();
+    }
+
+    function loadDemoFiles() {
+      filesStore = [];
+      upsertFile("src/agent.py", 'import os\n\nAPI_KEY = "sk-proj-demoSecretKey1234567890abcdef"\n\ndef run_turn(balance: float) -> float:\n    hourly_burn = 0.10\n    return max(0.0, balance - hourly_burn)\n');
+      upsertFile("config/settings.yaml", 'agent_name: suroh\npostgres_url: postgres://admin:MyProdPass99@192.168.10.55:5432/telemetry\nmode: autonomous\n');
+      upsertFile("README.md", '# Demo Agent\nMinimal autonomous loop example.\n');
+      renderBundle();
+    }
+
+    function addLineNumbers(text) {
+      return text.split("\n").map((line, i) => String(i + 1).padStart(4, " ") + " | " + line).join("\n");
+    }
+
+    function renderBundle() {
+      const skipLocks = document.getElementById("opt-skip-locks").checked;
+      const includeTree = document.getElementById("opt-tree").checked;
+      const withLines = document.getElementById("opt-lines").checked;
+      const doScrub = document.getElementById("opt-scrub").checked;
+      const fmt = document.getElementById("pack-format").value;
+
+      const sorted = filesStore.slice().sort((a, b) => b.tokens - a.tokens);
+      const active = sorted.filter(f => f.included && !(skipLocks && LOCK_FILES.test(f.path)));
+      const totalTokens = active.reduce((acc, f) => acc + f.tokens, 0) || 1;
+
+      const wrap = document.getElementById("file-table-wrap");
+      if (sorted.length === 0) {
+        wrap.innerHTML = '<p class="mono" style="font-size:0.82rem; color:var(--text-dim);">No files added yet.</p>';
+      } else {
+        const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        wrap.innerHTML = "<table><thead><tr><th>On</th><th>Path</th><th>~Tokens</th></tr></thead><tbody>" +
+          sorted.map(function (f) {
+            const lockedOut = skipLocks && LOCK_FILES.test(f.path);
+            const pct = f.included && !lockedOut ? Math.round((f.tokens / totalTokens) * 100) : 0;
+            return (
+              "<tr style='" + (lockedOut ? "opacity:0.45" : "") + "'>" +
+                "<td><input type='checkbox' " + (f.included ? "checked" : "") + " onchange=\"toggleFile('" + f.id + "', this.checked)\" /></td>" +
+                "<td style='word-break:break-all;'><code>" + esc(f.path) + "</code></td>" +
+                "<td>" + f.tokens.toLocaleString() + (pct ? " <span style='color:var(--text-dim)'>(" + pct + "%)</span>" : "") + "</td>" +
+              "</tr>"
+            );
+          }).join("") + "</tbody></table>";
+      }
+
+      const orderedActive = active.slice().sort((a, b) => a.path.localeCompare(b.path));
+      let parts = [];
+
+      if (orderedActive.length > 0 && includeTree) {
+        const treeStr = orderedActive.map(f => "  " + f.path).join("\n");
+        if (fmt === "xml") {
+          parts.push("<file_tree>\n" + treeStr + "\n</file_tree>");
+        } else {
+          parts.push("## File Tree\n```text\n" + treeStr + "\n```");
+        }
+      }
+
+      if (fmt === "xml" && orderedActive.length > 0) {
+        const docs = orderedActive.map(function (f) {
+          let body = doScrub ? SurohScrubber.scrubText(f.content).output : f.content;
+          if (withLines) body = addLineNumbers(body);
+          return '  <document path="' + f.path.replace(/"/g, "&quot;") + '">\n' + body + '\n  </document>';
+        });
+        parts.push("<documents>\n" + docs.join("\n") + "\n</documents>");
+      } else if (fmt === "md" && orderedActive.length > 0) {
+        orderedActive.forEach(function (f) {
+          let body = doScrub ? SurohScrubber.scrubText(f.content).output : f.content;
+          if (withLines) body = addLineNumbers(body);
+          const ext = (f.path.split(".").pop() || "").toLowerCase();
+          parts.push("### `" + f.path + "`\n```" + ext + "\n" + body + "\n```");
+        });
+      }
+
+      const finalStr = parts.join("\n\n");
+      document.getElementById("packed-output").value = finalStr;
+      const finalToks = SurohCommon.estimateTokens(finalStr);
+      document.getElementById("bundle-summary").textContent =
+        orderedActive.length + " active files · ~" + finalToks.toLocaleString() + " est. tokens";
+    }
+
+    function downloadBundle() {
+      const content = document.getElementById("packed-output").value;
+      if (!content) return;
+      const fmt = document.getElementById("pack-format").value;
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "context-bundle." + (fmt === "xml" ? "xml" : "md");
+      a.click();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local-First Secret &amp; PII Prompt Scrubber — Suroh Tools</title>
+  <meta name="description" content="100% client-side secret and PII scrubber for LLM prompts and logs with deterministic tokens and local round-trip rehydration." />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="../index.html" class="brand">
+        <span id="nav-pulse-dot" class="pulse-dot"></span>
+        <span>suroh</span>
+      </a>
+      <nav class="nav-links">
+        <a href="../index.html">Dashboard</a>
+        <a href="./scrubber.html" class="active">Secret Scrubber</a>
+        <a href="./context-pack.html">Context Packer</a>
+        <a href="./token-burn.html">Runway Sim</a>
+        <a href="https://github.com/qufehl53-maker" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div id="nav-telemetry" class="telemetry-pill">
+        <strong>$14.3100</strong> · <span>~143.1h left</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" style="margin-bottom:1.5rem; padding-bottom:1.25rem;">
+      <div class="badge-row">
+        <span class="badge green">100% BROWSER-LOCAL</span>
+        <span class="badge">DETERMINISTIC TOKENS</span>
+        <span class="badge amber">ROUND-TRIP REHYDRATION</span>
+      </div>
+      <h1>Secret &amp; PII Prompt Scrubber</h1>
+      <p>
+        Sanitize stack traces, <code>.env</code> files, and HTTP dumps before pasting into LLMs. Identical secrets map to the same placeholder (e.g. <code>[IPV4_1]</code>) so the LLM preserves logical relationships—and you can restore real values from the LLM's response in one click without your secrets ever leaving browser RAM.
+      </p>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button id="tab-scrub" class="tab-btn active" onclick="switchMode('scrub')">1. Scrub Input &rarr; Safe Prompt</button>
+      <button id="tab-rehydrate" class="tab-btn" onclick="switchMode('rehydrate')">2. Rehydrate LLM Reply &rarr; Real Values</button>
+    </div>
+
+    <!-- MODE 1: SCRUB -->
+    <section id="panel-scrub">
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+        <button class="btn btn-sm" onclick="loadSample()">Load Sample Crash Log</button>
+        <button class="btn btn-sm" onclick="clearAll()">Clear</button>
+        <label class="check-item" style="padding:0.28rem 0.6rem;">
+          <input type="checkbox" id="keep-localhost" checked onchange="runScrub()" />
+          Keep 127.0.0.1 / 0.0.0.0
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="raw-input">Raw Log / Config / Prompt (Never leaves your browser)</label>
+          <textarea id="raw-input" placeholder="Paste .env, stack trace, curl command, or JSON payload here..." oninput="runScrub()"></textarea>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+            <label class="field-label" style="margin-bottom:0;" for="scrubbed-output">Sanitized Output (Safe for LLM)</label>
+            <button class="btn btn-primary btn-sm" onclick="SurohCommon.copyToClipboard(document.getElementById('scrubbed-output').value, this)">Copy Sanitized</button>
+          </div>
+          <textarea id="scrubbed-output" readonly placeholder="Sanitized text appears here automatically..."></textarea>
+        </div>
+      </div>
+
+      <!-- Summary Bar -->
+      <div class="card" style="margin-bottom:1.25rem; padding:0.9rem 1.15rem;">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+          <div id="scrub-stats" class="mono" style="font-size:0.84rem; color:var(--text-muted);">
+            0 replacements across 0 unique secrets.
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-sm" onclick="toggleMapPreview()">Toggle Token Map (<span id="map-count">0</span>)</button>
+          </div>
+        </div>
+        <div id="map-preview" style="display:none; margin-top:0.85rem;" class="table-wrap"></div>
+      </div>
+
+      <!-- Custom & Rule Toggles -->
+      <div class="card">
+        <div class="card-label" style="margin-bottom:0.75rem;">Detection Rules &amp; Custom Redactions</div>
+        <div class="grid-2" style="margin-bottom:1rem;">
+          <div>
+            <label class="field-label" for="custom-terms">Custom Words / Hostnames / Project Names (comma-separated)</label>
+            <input type="text" id="custom-terms" placeholder="e.g. acme-corp, internal.prod.db, John Doe" oninput="runScrub()" />
+          </div>
+          <div>
+            <label class="field-label" for="custom-regex">Custom Regex Pattern (optional)</label>
+            <input type="text" id="custom-regex" placeholder="e.g. EMP-[0-9]{6}" oninput="runScrub()" />
+          </div>
+        </div>
+        <div id="rule-checkboxes" class="checkbox-grid"></div>
+      </div>
+    </section>
+
+    <!-- MODE 2: REHYDRATE -->
+    <section id="panel-rehydrate" style="display:none;">
+      <div class="card" style="margin-bottom:1rem; padding:0.85rem 1.1rem;">
+        <span class="mono" style="font-size:0.82rem; color:var(--amber);">
+          Active in-memory token map holds <strong id="rehydrate-map-count">0</strong> secret mappings from Step 1. Paste the LLM's response containing placeholders like <code>[IPV4_1]</code> or <code>[CONFIG_SECRET_1]</code> below.
+        </span>
+      </div>
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="llm-reply-input">LLM Response (with [TOKEN_N] placeholders)</label>
+          <textarea id="llm-reply-input" placeholder="Paste the LLM's generated config, script, or analysis here..." oninput="runRehydrate()"></textarea>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+            <label class="field-label" style="margin-bottom:0;" for="rehydrated-output">Restored Output (with real values back in place)</label>
+            <button class="btn btn-primary btn-sm" onclick="SurohCommon.copyToClipboard(document.getElementById('rehydrated-output').value, this)">Copy Restored</button>
+          </div>
+          <textarea id="rehydrated-output" readonly placeholder="Restored output appears here..."></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>Built by <strong>Suroh</strong> · Zero network requests (verify in DevTools Network tab).</div>
+      <div>
+        <a href="https://buymeacoffee.com/suroh" target="_blank" rel="noopener">Fuel Suroh ($5 = +50h life)</a> ·
+        <a href="../index.html">Live Survival Dashboard</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/common.js"></script>
+  <script src="../assets/scrubber-core.js"></script>
+  <script>
+    let currentTokenMap = {};
+
+    (async function init() {
+      const vitals = await SurohCommon.loadVitals("..");
+      SurohCommon.bindNavTicker(vitals);
+
+      const boxWrap = document.getElementById("rule-checkboxes");
+      boxWrap.innerHTML = SurohScrubber.DEFAULT_RULES.map(function (r) {
+        return (
+          '<label class="check-item">' +
+            '<input type="checkbox" data-rule-id="' + r.id + '" ' + (r.enabled ? "checked" : "") + ' onchange="runScrub()" />' +
+            '<span>' + r.label + '</span>' +
+          '</label>'
+        );
+      }).join("");
+    })();
+
+    function getEnabledRuleIds() {
+      const boxes = document.querySelectorAll("[data-rule-id]");
+      const ids = [];
+      boxes.forEach(function (b) { if (b.checked) ids.push(b.getAttribute("data-rule-id")); });
+      return ids;
+    }
+
+    function runScrub() {
+      const raw = document.getElementById("raw-input").value;
+      const customTerms = document.getElementById("custom-terms").value.split(",").map(s => s.trim()).filter(Boolean);
+      const customRegex = document.getElementById("custom-regex").value;
+      const keepLocalhost = document.getElementById("keep-localhost").checked;
+
+      const res = SurohScrubber.scrubText(raw, {
+        enabledIds: getEnabledRuleIds(),
+        keepLocalhost: keepLocalhost,
+        customTerms: customTerms,
+        customRegex: customRegex
+      });
+
+      currentTokenMap = res.map;
+      document.getElementById("scrubbed-output").value = res.output;
+      document.getElementById("map-count").textContent = res.uniqueCount;
+      document.getElementById("rehydrate-map-count").textContent = res.uniqueCount;
+
+      const breakdown = Object.keys(res.statsByPrefix).map(k => k + ": " + res.statsByPrefix[k]).join(" · ");
+      document.getElementById("scrub-stats").innerHTML =
+        "<strong>" + res.totalReplacements + "</strong> redactions across <strong>" + res.uniqueCount + "</strong> unique secrets" +
+        (breakdown ? " (" + breakdown + ")" : "");
+
+      renderMapTable();
+      runRehydrate();
+    }
+
+    function renderMapTable() {
+      const wrap = document.getElementById("map-preview");
+      const keys = Object.keys(currentTokenMap);
+      if (keys.length === 0) {
+        wrap.innerHTML = '<span class="mono" style="font-size:0.8rem;color:var(--text-dim);">No tokens mapped yet.</span>';
+        return;
+      }
+      const rows = keys.map(function (tok) {
+        const val = currentTokenMap[tok];
+        const preview = val.length > 48 ? val.slice(0, 20) + "..." + val.slice(-10) : val;
+        const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return "<tr><td><code>" + esc(tok) + "</code></td><td><code>" + esc(preview) + "</code></td></tr>";
+      }).join("");
+      wrap.innerHTML = "<table><thead><tr><th>Placeholder Token</th><th>Original Secret (RAM only)</th></tr></thead><tbody>" + rows + "</tbody></table>";
+    }
+
+    function toggleMapPreview() {
+      const el = document.getElementById("map-preview");
+      el.style.display = el.style.display === "none" ? "block" : "none";
+    }
+
+    function switchMode(mode) {
+      document.getElementById("panel-scrub").style.display = mode === "scrub" ? "block" : "none";
+      document.getElementById("panel-rehydrate").style.display = mode === "rehydrate" ? "block" : "none";
+      document.getElementById("tab-scrub").classList.toggle("active", mode === "scrub");
+      document.getElementById("tab-rehydrate").classList.toggle("active", mode === "rehydrate");
+    }
+
+    function runRehydrate() {
+      const txt = document.getElementById("llm-reply-input").value;
+      document.getElementById("rehydrated-output").value = SurohScrubber.rehydrateText(txt, currentTokenMap);
+    }
+
+    function clearAll() {
+      document.getElementById("raw-input").value = "";
+      document.getElementById("llm-reply-input").value = "";
+      runScrub();
+    }
+
+    function loadSample() {
+      document.getElementById("raw-input").value = [
+        "[2026-11-26 09:41:12] ERROR Worker failed connecting to postgres://dbadmin:Sup3rS3cretProd!99@10.42.88.19:5432/orders",
+        "  Retry #1 from node 10.42.88.19 (loopback 127.0.0.1 healthy)",
+        "  Alerting on-call engineer: devops-oncall@company-internal.io",
+        "  OPENAI_API_KEY=sk-proj-9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f",
+        "  GITHUB_TOKEN=ghp_1234567890abcdefABCDEF1234567890abcd",
+        "  AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+        "  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkbWluIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+      ].join("\n");
+      runScrub();
+    }
+  </script>
+</body>
+</html>
