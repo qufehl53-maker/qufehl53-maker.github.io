@@ -101,10 +101,26 @@ def scrub_text(text: str, keep_localhost: bool = True) -> Tuple[str, Dict[str, s
 
     # 5. Config / .env secret assignments
     def repl_kv(m: re.Match) -> str:
+        prefix_part = m.group(1)
         val = m.group(2)
-        if len(val) < 4 or val.lower() in {"true", "false", "null", "none"} or val.startswith("$") or already_tok.match(val):
+        suffix_quote = m.group(3)
+        is_quoted = prefix_part.endswith(('"', "'")) and suffix_quote in ('"', "'")
+        if (
+            len(val) < 4
+            or val.lower() in {"true", "false", "null", "none", "undefined"}
+            or val.startswith("$")
+            or already_tok.match(val)
+        ):
             return m.group(0)
-        return f"{m.group(1)}{get_token('CONFIG_SECRET', val)}{m.group(3)}"
+        if not is_quoted and (
+            "(" in val
+            or ")" in val
+            or "[" in val
+            or "]" in val
+            or re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+$", val)
+        ):
+            return m.group(0)
+        return f"{prefix_part}{get_token('CONFIG_SECRET', val)}{suffix_quote}"
 
     text = re.sub(
         r"(\b[A-Za-z0-9_]*(?:PASSWORD|PASSWD|SECRET|API_KEY|APIKEY|PRIVATE_KEY|ACCESS_TOKEN|AUTH_TOKEN|CLIENT_SECRET|DB_PASS)[A-Za-z0-9_]*\b\s*[:=]\s*[\"']?)([^\"'\s,;}{]+)([\"']?)",
@@ -252,7 +268,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
     findings = 0
     files = collect_files(args.paths, include_locks=False)
     for rel, content in files:
-        _, mapping = scrub_text(content, keep_localhost=True)
+        filtered = "\n".join(ln for ln in content.splitlines() if "suroh:ignore" not in ln)
+        _, mapping = scrub_text(filtered, keep_localhost=True)
         matched = []
         for tok in mapping:
             prefix = tok.strip("[]").rsplit("_", 1)[0]

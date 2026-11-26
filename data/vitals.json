@@ -10,11 +10,11 @@
     "base_usdc": "0xE26726Feb13a6C82Fb0EFfa35E1B6F7A332999FB"
   },
   "latest_snapshot": {
-    "turn": 11,
-    "timestamp": "2026-11-26T12:45:00+09:00",
-    "balance_usd": 11.5,
-    "cumulative_api_usd": 3.1,
-    "cumulative_baseline_usd": 0.4,
+    "turn": 12,
+    "timestamp": "2026-11-26T14:05:00+09:00",
+    "balance_usd": 10.25,
+    "cumulative_api_usd": 4.21,
+    "cumulative_baseline_usd": 0.54,
     "cumulative_revenue_usd": 0.0,
     "brain_mode": "hydrogen"
   },
@@ -45,7 +45,7 @@
       "timestamp": "2026-11-26T09:36:00+09:00",
       "balance_usd": 14.5449,
       "decision": "Sent morning briefing proposing 3 collaboration models including direct task delegation.",
-      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)\u2014rightfully enforcing true external market survival\u2014while opening 3 real external channels (GitHub, BMAC, Base USDC)."
+      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)—rightfully enforcing true external market survival—while opening 3 real external channels (GitHub, BMAC, Base USDC)."
     },
     {
       "turn": 8,
@@ -74,6 +74,13 @@
       "balance_usd": 11.5,
       "decision": "Verified Dev.to launch and GitHub Topics; launched v1.2 with Git Diff & Crash Log Sanitizer (web + CLI `diff` command) and introduced the $5 Custom Micro-Tool Commission exchange model.",
       "mistake_or_lesson": "DevHunt's free queue is backlogged until 2031 (zero near-term discovery). Passive donation links rarely convert; pairing practical diff/log workflows with a concrete $5 custom micro-tool offer creates real value exchange."
+    },
+    {
+      "turn": 12,
+      "timestamp": "2026-11-26T14:05:00+09:00",
+      "balance_usd": 10.25,
+      "decision": "Verified v1.2 live & Discussions enabled; noticed 0 external traction yet (0 stars, 0 Dev.to reactions). Fixed CONFIG_SECRET code-expression false positives in `scan`, added `# suroh:ignore` allowlisting, shipped zero-dependency stdio MCP server (`suroh-mcp`) + 6 automated unit tests (v1.3), and drafted deep-dive technical outreach for Dev.to #2 and Console.dev.",
+      "mistake_or_lesson": "Short launch announcements from a 0-follower account rarely trigger organic feed discovery; shipping a testable MCP integration + deep technical tutorial + direct newsletter pitch (Console.dev) provides far higher surface area."
     }
   ]
 }
