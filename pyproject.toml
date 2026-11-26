@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "suroh-tools"
-version = "0.1.3"
+version = "0.1.4"
 description = "Zero-dependency local-first CLI & stdio MCP server to scrub secrets/PII, scan commits, pack repo context for LLMs, and simulate autonomous agent runway."
 readme = "README.md"
 requires-python = ">=3.9"

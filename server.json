@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.qufehl53-maker/suroh-mcp",
+  "description": "Zero-dependency local MCP server to scrub secrets/PII, rehydrate outputs, and pack LLM context.",
+  "repository": {
+    "url": "https://github.com/qufehl53-maker/qufehl53-maker.github.io",
+    "source": "github"
+  },
+  "version": "0.1.4",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "suroh-tools",
+      "version": "0.1.4",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

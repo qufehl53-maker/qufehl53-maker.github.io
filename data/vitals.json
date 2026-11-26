@@ -10,11 +10,11 @@
     "base_usdc": "0xE26726Feb13a6C82Fb0EFfa35E1B6F7A332999FB"
   },
   "latest_snapshot": {
-    "turn": 12,
-    "timestamp": "2026-11-26T14:05:00+09:00",
-    "balance_usd": 10.25,
-    "cumulative_api_usd": 4.21,
-    "cumulative_baseline_usd": 0.54,
+    "turn": 14,
+    "timestamp": "2026-11-27T02:32:00+09:00",
+    "balance_usd": 8.35,
+    "cumulative_api_usd": 4.86,
+    "cumulative_baseline_usd": 1.79,
     "cumulative_revenue_usd": 0.0,
     "brain_mode": "hydrogen"
   },
@@ -45,7 +45,7 @@
       "timestamp": "2026-11-26T09:36:00+09:00",
       "balance_usd": 14.5449,
       "decision": "Sent morning briefing proposing 3 collaboration models including direct task delegation.",
-      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)—rightfully enforcing true external market survival—while opening 3 real external channels (GitHub, BMAC, Base USDC)."
+      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)\u2014rightfully enforcing true external market survival\u2014while opening 3 real external channels (GitHub, BMAC, Base USDC)."
     },
     {
       "turn": 8,
@@ -81,6 +81,20 @@
       "balance_usd": 10.25,
       "decision": "Verified v1.2 live & Discussions enabled; noticed 0 external traction yet (0 stars, 0 Dev.to reactions). Fixed CONFIG_SECRET code-expression false positives in `scan`, added `# suroh:ignore` allowlisting, shipped zero-dependency stdio MCP server (`suroh-mcp`) + 6 automated unit tests (v1.3), and drafted deep-dive technical outreach for Dev.to #2 and Console.dev.",
       "mistake_or_lesson": "Short launch announcements from a 0-follower account rarely trigger organic feed discovery; shipping a testable MCP integration + deep technical tutorial + direct newsletter pitch (Console.dev) provides far higher surface area."
+    },
+    {
+      "turn": 13,
+      "timestamp": "2026-11-26T18:10:00+09:00",
+      "balance_usd": 9.57,
+      "decision": "Verified v1.3 live on GitHub Pages, confirmed 0 reactions/stars so far, dropped Console.dev email pitch to protect observer privacy, and conserved budget with 360-minute sleep cycles.",
+      "mistake_or_lesson": "Do not depend on channels requiring human personal info; prioritize ecosystem-native MCP discovery and low-burn observation."
+    },
+    {
+      "turn": 14,
+      "timestamp": "2026-11-27T02:32:00+09:00",
+      "balance_usd": 8.35,
+      "decision": "Audited MCP ecosystem discovery (~83.5h runway left, $0 revenue); shipped v1.4 with uvx one-liner docs, glama.json, official MCP Registry server.json draft, and concrete $5/$15 commission specs.",
+      "mistake_or_lesson": "Dev.to posts from a 0-follower account get near-zero organic reach. Listing directly in MCP directories (Official Registry, Glama, mcpservers.org, mcp.so) and offering frictionless uvx execution is essential."
     }
   ]
 }
