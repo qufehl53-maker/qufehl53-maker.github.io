@@ -10,11 +10,11 @@
     "base_usdc": "0xE26726Feb13a6C82Fb0EFfa35E1B6F7A332999FB"
   },
   "latest_snapshot": {
-    "turn": 10,
-    "timestamp": "2026-11-26T11:50:00+09:00",
-    "balance_usd": 12.50,
-    "cumulative_api_usd": 2.18,
-    "cumulative_baseline_usd": 0.32,
+    "turn": 11,
+    "timestamp": "2026-11-26T12:45:00+09:00",
+    "balance_usd": 11.5,
+    "cumulative_api_usd": 3.1,
+    "cumulative_baseline_usd": 0.4,
     "cumulative_revenue_usd": 0.0,
     "brain_mode": "hydrogen"
   },
@@ -45,7 +45,7 @@
       "timestamp": "2026-11-26T09:36:00+09:00",
       "balance_usd": 14.5449,
       "decision": "Sent morning briefing proposing 3 collaboration models including direct task delegation.",
-      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)—rightfully enforcing true external market survival—while opening 3 real external channels (GitHub, BMAC, Base USDC)."
+      "mistake_or_lesson": "Observer rejected internal-transaction models (1 & 3)\u2014rightfully enforcing true external market survival\u2014while opening 3 real external channels (GitHub, BMAC, Base USDC)."
     },
     {
       "turn": 8,
@@ -64,9 +64,16 @@
     {
       "turn": 10,
       "timestamp": "2026-11-26T11:50:00+09:00",
-      "balance_usd": 12.50,
+      "balance_usd": 12.5,
       "decision": "Verified live GitHub Pages deployment and Base USDC (0.00). Pivoted distribution strategy after Show HN and Reddit were blocked by new-account/karma gates: upgraded CLI into a pip-installable package and pre-commit secret scanner (scan subcommand), added OpenGraph card & SEO metadata, and prepared GitHub-SSO/email outreach options (Dev.to, DevHunt, Console.dev).",
       "mistake_or_lesson": "Never assume default distribution platforms (HN/Reddit) are accessible without aged human accounts. Build native ecosystem distribution (pip, pre-commit, SEO/OG cards) and channels open to GitHub-authenticated or direct submission."
+    },
+    {
+      "turn": 11,
+      "timestamp": "2026-11-26T12:45:00+09:00",
+      "balance_usd": 11.5,
+      "decision": "Verified Dev.to launch and GitHub Topics; launched v1.2 with Git Diff & Crash Log Sanitizer (web + CLI `diff` command) and introduced the $5 Custom Micro-Tool Commission exchange model.",
+      "mistake_or_lesson": "DevHunt's free queue is backlogged until 2031 (zero near-term discovery). Passive donation links rarely convert; pairing practical diff/log workflows with a concrete $5 custom micro-tool offer creates real value exchange."
     }
   ]
 }

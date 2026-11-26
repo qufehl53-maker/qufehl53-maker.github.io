@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -269,6 +270,84 @@ def cmd_scan(args: argparse.Namespace) -> int:
     return 0
 
 
+
+NOISY_DIFF_SUFFIXES = (
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "Cargo.lock",
+    "poetry.lock", "Pipfile.lock", "composer.lock", "Gemfile.lock", ".map"
+)
+
+
+def _is_noisy_diff_path(path: str) -> bool:
+    low = path.lower()
+    return low.endswith(NOISY_DIFF_SUFFIXES) or low.endswith(".min.js") or low.endswith(".min.css")
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    if args.input and args.input != "-":
+        raw = Path(args.input).read_text(encoding="utf-8", errors="replace")
+    elif not sys.stdin.isatty() and not args.staged and not args.base:
+        raw = sys.stdin.read()
+    else:
+        cmd = ["git", "diff"]
+        if args.staged:
+            cmd.append("--staged")
+        elif args.base:
+            cmd.append(f"{args.base}...HEAD")
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            sys.stderr.write(proc.stderr or "[suroh diff] git diff failed.\n")
+            return proc.returncode or 1
+        raw = proc.stdout
+
+    if not raw.strip():
+        sys.stderr.write("[suroh diff] Empty diff/input.\n")
+        return 0
+
+    kept = []
+    skipped = []
+    if re.search(r"^diff --git ", raw, re.M):
+        chunks = re.split(r"(?=^diff --git )", raw, flags=re.M)
+        for ch in chunks:
+            if not ch.strip():
+                continue
+            m = re.search(r"^diff --git a/(.+?) b/(.+?)$", ch, re.M)
+            fpath = m.group(2) if m else "unknown"
+            if not args.include_locks and _is_noisy_diff_path(fpath):
+                skipped.append(fpath)
+                continue
+            kept.append(ch)
+        body = "".join(kept)
+    else:
+        body = raw
+
+    mapping = {}
+    if not args.no_scrub and body:
+        body, mapping = scrub_text(body, keep_localhost=not args.redact_localhost)
+
+    if args.preset == "review":
+        out = f"Review the following sanitized git diff for bugs, security vulnerabilities, race conditions, and edge cases:\n\n```diff\n{body.strip()}\n```\n"
+    elif args.preset == "commit":
+        out = f"Generate a concise Conventional Commit message (title <= 72 chars + bullet body) for this sanitized diff:\n\n```diff\n{body.strip()}\n```\n"
+    elif args.preset == "pr":
+        out = f"Summarize this sanitized diff into a Pull Request description (## Summary, ## Potential Risks, ## Test Checklist):\n\n```diff\n{body.strip()}\n```\n"
+    elif args.preset == "rca":
+        out = f"Analyze this sanitized crash log / diff. Identify the root cause and propose a minimal safe fix:\n\n```\n{body.strip()}\n```\n"
+    else:
+        out = body
+
+    if args.save_map:
+        Path(args.save_map).write_text(json.dumps(mapping, indent=2), encoding="utf-8")
+    if args.output:
+        Path(args.output).write_text(out, encoding="utf-8")
+    else:
+        sys.stdout.write(out)
+
+    sys.stderr.write(
+        f"[suroh diff] Skipped {len(skipped)} noisy file(s), scrubbed {len(mapping)} unique token(s) (~{estimate_tokens(out):,} est. tokens).\n"
+    )
+    return 0
+
+
 def cmd_runway(args: argparse.Namespace) -> int:
     turn_api = (args.in_tokens / 1e6) * args.price_in + (args.out_tokens / 1e6) * args.price_out
     turns_per_hr = 60.0 / max(0.05, args.interval_min)
@@ -312,6 +391,18 @@ def build_parser() -> argparse.ArgumentParser:
     s_pack.add_argument("--no-tree", action="store_true", help="Omit file tree header")
     s_pack.add_argument("--include-locks", action="store_true", help="Include lockfiles")
     s_pack.set_defaults(func=cmd_pack)
+
+    s_diff = sub.add_parser("diff", help="Sanitize git diff / crash logs & strip lockfile noise")
+    s_diff.add_argument("input", nargs="?", help="Optional .diff/.log file or '-' for stdin (defaults to `git diff`)")
+    s_diff.add_argument("--staged", action="store_true", help="Read `git diff --staged`")
+    s_diff.add_argument("--base", help="Compare against base ref (`git diff <base>...HEAD`)")
+    s_diff.add_argument("--preset", choices=["raw", "review", "commit", "pr", "rca"], default="raw")
+    s_diff.add_argument("--include-locks", action="store_true", help="Do not strip lockfiles / .min.js")
+    s_diff.add_argument("--no-scrub", action="store_true", help="Disable secret/PII scrubbing")
+    s_diff.add_argument("--redact-localhost", action="store_true", help="Also redact 127.0.0.1 / 0.0.0.0")
+    s_diff.add_argument("--save-map", help="Save JSON token rehydration map to file")
+    s_diff.add_argument("-o", "--output", help="Output file path (defaults to stdout)")
+    s_diff.set_defaults(func=cmd_diff)
 
     s_scan = sub.add_parser("scan", help="Scan files/dirs for leaked secrets (CI & pre-commit hook)")
     s_scan.add_argument("paths", nargs="+", help="Files or directories to scan")

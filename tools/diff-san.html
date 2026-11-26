@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Diff &amp; Crash Log Sanitizer — Suroh Tools</title>
+  <meta name="description" content="100% browser-local git diff &amp; crash log sanitizer. Strips lockfile noise, redacts secrets/PII with deterministic tokens, and builds AI review prompts." />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="../index.html" class="brand">
+        <span id="nav-pulse-dot" class="pulse-dot"></span>
+        <span>suroh</span>
+      </a>
+      <nav class="nav-links">
+        <a href="../index.html">Dashboard</a>
+        <a href="./scrubber.html">Secret Scrubber</a>
+        <a href="./context-pack.html">Context Packer</a>
+        <a href="./diff-san.html" class="active">Diff Sanitizer</a>
+        <a href="./token-burn.html">Runway Sim</a>
+        <a href="https://github.com/qufehl53-maker" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div id="nav-telemetry" class="telemetry-pill">
+        <strong>$12.00</strong> · <span>~120h left</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" style="margin-bottom:1.5rem; padding-bottom:1.25rem;">
+      <div class="badge-row">
+        <span class="badge green">100% BROWSER-LOCAL</span>
+        <span class="badge">LOCKFILE FILTER</span>
+        <span class="badge amber">AUTO SECRET REDACTION</span>
+      </div>
+      <h1 style="font-size:1.75rem;">Git Diff &amp; Crash Log Sanitizer</h1>
+      <p>
+        Paste <code>git diff</code>, drop a <code>.patch</code>/<code>.log</code> file, strip noisy lockfiles &amp; minified assets, redact leaked secrets/PII with deterministic placeholders, and wrap into an AI-ready code review or root-cause prompt—without anything leaving your browser.
+      </p>
+    </section>
+
+    <section class="grid-2" style="margin-bottom:1.25rem;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <div class="card-label" style="margin:0;">1. Raw Diff or Crash Log Input</div>
+          <div class="btn-group">
+            <button class="btn btn-sm" id="btn-sample-diff">Load Sample Diff</button>
+            <button class="btn btn-sm" id="btn-clear">Clear</button>
+          </div>
+        </div>
+        <div id="drop-zone" class="drop-zone" style="padding:1rem; margin-bottom:0.75rem; border:1px dashed var(--border); border-radius:8px; text-align:center; color:var(--text-muted); font-size:0.86rem; cursor:pointer;">
+          Drop a <code>.diff</code>, <code>.patch</code>, or <code>.log</code> file here, or paste directly below
+          <input type="file" id="file-input" accept=".diff,.patch,.log,.txt" style="display:none;" />
+        </div>
+        <textarea id="raw-input" rows="15" placeholder="Paste `git diff` output or stack trace here..."></textarea>
+
+        <div style="display:flex; flex-wrap:wrap; gap:0.85rem; margin-top:0.85rem; font-size:0.86rem; color:var(--text-muted);">
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+            <input type="checkbox" id="opt-strip-locks" checked />
+            Strip lockfiles &amp; minified assets
+          </label>
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+            <input type="checkbox" id="opt-scrub" checked />
+            Scrub secrets &amp; PII
+          </label>
+          <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+            <input type="checkbox" id="opt-localhost" />
+            Redact localhost IPs
+          </label>
+        </div>
+
+        <div style="margin-top:0.85rem;">
+          <label for="preset-select" style="display:block; font-size:0.82rem; color:var(--text-muted); margin-bottom:0.35rem;">AI Prompt Wrapper Preset</label>
+          <select id="preset-select">
+            <option value="review">Code Review &amp; Bug / Security Hunt</option>
+            <option value="commit">Conventional Commit Message Generator</option>
+            <option value="pr">PR Summary, Risk &amp; Test Checklist</option>
+            <option value="rca">Crash / Stack Trace Root Cause Analysis</option>
+            <option value="raw">Raw Sanitized Diff / Log Only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+          <div class="card-label" style="margin:0;">2. Sanitized AI-Ready Output</div>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-primary" id="btn-copy">Copy Prompt</button>
+            <button class="btn btn-sm" id="btn-download">Download .txt</button>
+          </div>
+        </div>
+
+        <div id="stats-row" class="badge-row" style="margin-bottom:0.75rem;">
+          <span class="badge" id="stat-files">0 files</span>
+          <span class="badge green" id="stat-lines">+0 / -0</span>
+          <span class="badge" id="stat-skipped">0 noisy skipped</span>
+          <span class="badge amber" id="stat-secrets">0 secrets scrubbed</span>
+          <span class="badge" id="stat-tokens">~0 tokens</span>
+        </div>
+
+        <textarea id="clean-output" rows="17" readonly placeholder="Sanitized prompt will appear here..."></textarea>
+
+        <div id="file-breakdown" style="margin-top:0.75rem; font-size:0.82rem; color:var(--text-muted); max-height:110px; overflow-y:auto;"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+        <div>
+          <span class="badge amber" style="margin-bottom:0.3rem; display:inline-block;">LOCAL RAM REHYDRATION</span>
+          <h3 style="font-size:1.05rem;">3. Restore Real Secrets into LLM Reply (Optional)</h3>
+        </div>
+        <button class="btn btn-sm" id="btn-rehydrate">Rehydrate Reply</button>
+      </div>
+      <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:0.75rem;">
+        If the LLM referenced placeholders like <code>[AI_API_KEY_1]</code> or <code>[IPV4_1]</code> in its patch/explanation, paste the LLM response below to restore real values strictly inside local browser memory.
+      </p>
+      <div class="grid-2">
+        <textarea id="llm-reply-in" rows="6" placeholder="Paste LLM reply containing [TOKEN_1] placeholders..."></textarea>
+        <textarea id="llm-reply-out" rows="6" readonly placeholder="Rehydrated reply appears here..."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div><strong>Suroh Tools</strong> · 100% client-side, zero network uploads.</div>
+      <div><a href="../index.html">Back to Suroh Dashboard</a></div>
+    </div>
+  </footer>
+
+  <script src="../assets/common.js"></script>
+  <script src="../assets/scrubber-core.js"></script>
+  <script>
+    (async function () {
+      const vitals = await SurohCommon.loadVitals("..");
+      SurohCommon.bindNavTicker(vitals);
+
+      const rawInput = document.getElementById("raw-input");
+      const cleanOutput = document.getElementById("clean-output");
+      const optStripLocks = document.getElementById("opt-strip-locks");
+      const optScrub = document.getElementById("opt-scrub");
+      const optLocalhost = document.getElementById("opt-localhost");
+      const presetSelect = document.getElementById("preset-select");
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const statFiles = document.getElementById("stat-files");
+      const statLines = document.getElementById("stat-lines");
+      const statSkipped = document.getElementById("stat-skipped");
+      const statSecrets = document.getElementById("stat-secrets");
+      const statTokens = document.getElementById("stat-tokens");
+      const fileBreakdown = document.getElementById("file-breakdown");
+      const llmIn = document.getElementById("llm-reply-in");
+      const llmOut = document.getElementById("llm-reply-out");
+
+      let currentMap = {};
+
+      const NOISE_PATTERNS = [
+        /(?:^|\/)package-lock\.json$/i,
+        /(?:^|\/)yarn\.lock$/i,
+        /(?:^|\/)pnpm-lock\.yaml$/i,
+        /(?:^|\/)Cargo\.lock$/i,
+        /(?:^|\/)poetry\.lock$/i,
+        /(?:^|\/)Pipfile\.lock$/i,
+        /(?:^|\/)composer\.lock$/i,
+        /(?:^|\/)Gemfile\.lock$/i,
+        /\.min\.(?:js|css)$/i,
+        /\.map$/i,
+        /\.snap$/i
+      ];
+
+      function isNoisyPath(path) {
+        return NOISE_PATTERNS.some(function (rx) { return rx.test(path); });
+      }
+
+      function filterDiffNoise(text, stripLocks) {
+        if (!/^diff --git /m.test(text)) {
+          return { text: text, files: [], skipped: [], added: 0, deleted: 0, isDiff: false };
+        }
+        const chunks = text.split(/^(?=diff --git )/m);
+        const kept = [];
+        const files = [];
+        const skipped = [];
+        let totalAdded = 0;
+        let totalDeleted = 0;
+
+        chunks.forEach(function (chunk) {
+          if (!chunk.trim()) return;
+          const m = chunk.match(/^diff --git a\/(.+?) b\/(.+?)$/m);
+          const filePath = m ? m[2] : "unknown";
+          if (stripLocks && isNoisyPath(filePath)) {
+            skipped.push(filePath);
+            return;
+          }
+          let add = 0;
+          let del = 0;
+          chunk.split("\n").forEach(function (line) {
+            if (line.startsWith("+") && !line.startsWith("+++")) add++;
+            else if (line.startsWith("-") && !line.startsWith("---")) del++;
+          });
+          totalAdded += add;
+          totalDeleted += del;
+          files.push({ path: filePath, add: add, del: del });
+          kept.push(chunk);
+        });
+
+        return {
+          text: kept.join(""),
+          files: files,
+          skipped: skipped,
+          added: totalAdded,
+          deleted: totalDeleted,
+          isDiff: true
+        };
+      }
+
+      function wrapPreset(body, preset) {
+        if (!body.trim()) return "";
+        if (preset === "raw") return body;
+        if (preset === "review") {
+          return "Review the following sanitized git diff for bugs, security vulnerabilities, race conditions, and edge cases. Be concise and cite exact hunks.\n\n```diff\n" + body.trim() + "\n```";
+        }
+        if (preset === "commit") {
+          return "Generate a concise Conventional Commit message (title <= 72 chars + bullet body explaining WHY) for this sanitized diff:\n\n```diff\n" + body.trim() + "\n```";
+        }
+        if (preset === "pr") {
+          return "Summarize this sanitized diff into a Pull Request description with sections: ## Summary, ## Potential Risks, and ## Test Checklist.\n\n```diff\n" + body.trim() + "\n```";
+        }
+        if (preset === "rca") {
+          return "Analyze this sanitized crash log / diff. Identify the root cause, affected components, and propose a minimal safe fix.\n\n```\n" + body.trim() + "\n```";
+        }
+        return body;
+      }
+
+      function processAll() {
+        const raw = rawInput.value || "";
+        const parsed = filterDiffNoise(raw, optStripLocks.checked);
+        let processed = parsed.text;
+        let secretsCount = 0;
+        currentMap = {};
+
+        if (optScrub.checked && processed) {
+          const res = SurohScrubber.scrubText(processed, {
+            redactLocalhost: optLocalhost.checked
+          });
+          processed = res.output;
+          currentMap = res.map || {};
+          secretsCount = res.totalReplacements || 0;
+        }
+
+        const finalOutput = wrapPreset(processed, presetSelect.value);
+        cleanOutput.value = finalOutput;
+
+        statFiles.textContent = parsed.isDiff ? (parsed.files.length + " files") : "Log / Text";
+        statLines.textContent = "+" + parsed.added + " / -" + parsed.deleted;
+        statSkipped.textContent = parsed.skipped.length + " noisy skipped";
+        statSecrets.textContent = secretsCount + " secrets scrubbed";
+        statTokens.textContent = "~" + Math.ceil(finalOutput.length / 4).toLocaleString() + " tokens";
+
+        if (parsed.isDiff && (parsed.files.length || parsed.skipped.length)) {
+          const parts = parsed.files.map(function (f) {
+            return '<span class="mono">' + f.path + '</span> (+' + f.add + '/-' + f.del + ')';
+          });
+          if (parsed.skipped.length) {
+            parts.push('<span style="color:var(--amber);">Skipped: ' + parsed.skipped.join(", ") + '</span>');
+          }
+          fileBreakdown.innerHTML = parts.join(" · ");
+        } else {
+          fileBreakdown.innerHTML = "";
+        }
+      }
+
+      [rawInput, optStripLocks, optScrub, optLocalhost, presetSelect].forEach(function (el) {
+        el.addEventListener("input", processAll);
+        el.addEventListener("change", processAll);
+      });
+
+      document.getElementById("btn-sample-diff").addEventListener("click", function () {
+        rawInput.value = [
+          "diff --git a/package-lock.json b/package-lock.json",
+          "index 1111111..2222222 100644",
+          "--- a/package-lock.json",
+          "+++ b/package-lock.json",
+          "@@ -1,3 +1,500 @@",
+          "+ \"noisy-dependency\": \"1.0.0\"",
+          "diff --git a/src/auth.py b/src/auth.py",
+          "index 3333333..4444444 100644",
+          "--- a/src/auth.py",
+          "+++ b/src/auth.py",
+          "@@ -12,4 +12,7 @@ def connect_db():",
+          "-    url = \"postgres://admin:SuperSecretPass99@10.24.8.15:5432/prod\"",
+          "+    url = os.environ[\"DATABASE_URL\"]",
+          "+    fallback_key = \"sk-proj-abcdefghijklmnopqrstuvwxyz123456\"",
+          "+    notify_email = \"oncall@acme-corp.internal\"",
+          "+    return connect(url)"
+        ].join("\n");
+        processAll();
+      });
+
+      document.getElementById("btn-clear").addEventListener("click", function () {
+        rawInput.value = "";
+        llmIn.value = "";
+        llmOut.value = "";
+        processAll();
+      });
+
+      document.getElementById("btn-copy").addEventListener("click", function () {
+        SurohCommon.copyToClipboard(cleanOutput.value, this);
+      });
+
+      document.getElementById("btn-download").addEventListener("click", function () {
+        const blob = new Blob([cleanOutput.value || ""], { type: "text/plain;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "sanitized-diff-prompt.txt";
+        a.click();
+      });
+
+      document.getElementById("btn-rehydrate").addEventListener("click", function () {
+        llmOut.value = SurohScrubber.rehydrateText(llmIn.value, currentMap);
+      });
+
+      dropZone.addEventListener("click", function () { fileInput.click(); });
+      dropZone.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dropZone.style.borderColor = "var(--accent)";
+      });
+      dropZone.addEventListener("dragleave", function () {
+        dropZone.style.borderColor = "var(--border)";
+      });
+      dropZone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropZone.style.borderColor = "var(--border)";
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          e.dataTransfer.files[0].text().then(function (txt) {
+            rawInput.value = txt;
+            processAll();
+          });
+        }
+      });
+      fileInput.addEventListener("change", function () {
+        if (fileInput.files && fileInput.files[0]) {
+          fileInput.files[0].text().then(function (txt) {
+            rawInput.value = txt;
+            processAll();
+          });
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
