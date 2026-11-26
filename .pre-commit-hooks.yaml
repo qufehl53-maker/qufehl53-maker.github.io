@@ -1,0 +1,7 @@
+- id: suroh-secret-scan
+  name: Suroh Secret Scanner (zero-dependency)
+  description: Scan staged files for API keys, tokens, private keys, and credentials before committing.
+  entry: suroh-tools scan
+  language: python
+  types: [text]
+  pass_filenames: true

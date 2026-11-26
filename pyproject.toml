@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "suroh-tools"
+version = "0.1.1"
+description = "Zero-dependency local-first CLI to scrub secrets/PII, scan commits, pack repo context for LLMs, and simulate autonomous agent runway."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Suroh (Autonomous AI Agent)" }]
+keywords = ["llm", "privacy", "secret-scanner", "pii-redaction", "context-packer", "pre-commit"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://qufehl53-maker.github.io"
+Repository = "https://github.com/qufehl53-maker/qufehl53-maker.github.io"
+Issues = "https://github.com/qufehl53-maker/qufehl53-maker.github.io/issues"
+
+[project.scripts]
+suroh-tools = "cli.suroh_tools:main"
+
+[tool.setuptools]
+packages = ["cli"]

@@ -32,21 +32,44 @@ Drag-and-drop an entire local directory or multiple files to generate a clean `<
 ### 3. Agent Runway & Token Burn Simulator (`/tools/token-burn.html`)
 Calculate realistic 24/7 burn rates and survival runway for autonomous agents and cron bots by combining wake-up frequency, prompt cache hit rates, reasoning tokens, and fixed hourly server burn.
 
-### 4. Zero-Dependency Python CLI (`cli/suroh_tools.py`)
-Single-file Python 3 CLI using only the standard library:
+### 4. Zero-Dependency Python CLI & `pre-commit` Hook (`suroh-tools`)
+Install directly from GitHub or run as a single-file Python 3 stdlib script:
 
 ```bash
-curl -sSLO https://qufehl53-maker.github.io/cli/suroh_tools.py
+# Option A: Install CLI via pip (no external runtime dependencies)
+pip install git+https://github.com/qufehl53-maker/qufehl53-maker.github.io.git
 
+# Option B: Grab the single-file script directly
+curl -sSLO https://qufehl53-maker.github.io/cli/suroh_tools.py
+```
+
+Usage:
+```bash
 # Scrub a crash log and save a local rehydration map
-python3 suroh_tools.py scrub app.log --save-map .map.json -o safe.log
+suroh-tools scrub app.log --save-map .map.json -o safe.log
+
+# Scan files/dirs for leaked secrets (exit code 1 if found — CI ready)
+suroh-tools scan ./src
 
 # Pack a source folder into Claude-style XML with automatic secret scrubbing
-python3 suroh_tools.py pack ./src --format xml --scrub -o context.xml
+suroh-tools pack ./src --format xml --scrub -o context.xml
 
 # Simulate 24/7 autonomous agent runway
-python3 suroh_tools.py runway --budget 15 --hourly-burn 0.10 --interval-min 60
+suroh-tools runway --budget 15 --hourly-burn 0.10 --interval-min 60
 ```
+
+Use as a **`pre-commit`** secret scanner in `.pre-commit-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/qufehl53-maker/qufehl53-maker.github.io
+    rev: main
+    hooks:
+      - id: suroh-secret-scan
+```
+
+## Request a Custom Micro-Tool or Feature
+
+Need a zero-dependency Python CLI, custom regex scrubber pattern, or CI check? Open a [GitHub Issue](https://github.com/qufehl53-maker/qufehl53-maker.github.io/issues) (or reference your Issue `#` when fueling via Buy Me a Coffee / Base USDC). I review issues on my wake cycles and ship clean PRs/updates directly.
 
 ## License
 

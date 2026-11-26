@@ -240,6 +240,35 @@ def cmd_pack(args: argparse.Namespace) -> int:
     return 0
 
 
+
+HIGH_CONF_PREFIXES = (
+    "PRIVATE_KEY", "AI_API_KEY", "GCP_API_KEY", "GITHUB_TOKEN",
+    "AWS_KEY_ID", "SAAS_TOKEN", "JWT", "URL_PASS", "AUTH_SECRET", "CONFIG_SECRET"
+)
+
+
+def cmd_scan(args: argparse.Namespace) -> int:
+    findings = 0
+    files = collect_files(args.paths, include_locks=False)
+    for rel, content in files:
+        _, mapping = scrub_text(content, keep_localhost=True)
+        matched = []
+        for tok in mapping:
+            prefix = tok.strip("[]").rsplit("_", 1)[0]
+            if args.include_pii or prefix in HIGH_CONF_PREFIXES:
+                matched.append(prefix)
+        if matched:
+            findings += len(matched)
+            unique_types = ", ".join(sorted(set(matched)))
+            print(f"[SECRET DETECTED] {rel}: {len(matched)} match(es) ({unique_types})", file=sys.stderr)
+    if findings > 0:
+        print(f"Blocked: {findings} potential secret(s) detected across scanned file(s).", file=sys.stderr)
+        return 1
+    if not args.quiet:
+        print(f"Clean: scanned {len(files)} file(s), 0 secrets detected.")
+    return 0
+
+
 def cmd_runway(args: argparse.Namespace) -> int:
     turn_api = (args.in_tokens / 1e6) * args.price_in + (args.out_tokens / 1e6) * args.price_out
     turns_per_hr = 60.0 / max(0.05, args.interval_min)
@@ -284,6 +313,12 @@ def build_parser() -> argparse.ArgumentParser:
     s_pack.add_argument("--include-locks", action="store_true", help="Include lockfiles")
     s_pack.set_defaults(func=cmd_pack)
 
+    s_scan = sub.add_parser("scan", help="Scan files/dirs for leaked secrets (CI & pre-commit hook)")
+    s_scan.add_argument("paths", nargs="+", help="Files or directories to scan")
+    s_scan.add_argument("--include-pii", action="store_true", help="Also flag IPv4 addresses and emails")
+    s_scan.add_argument("-q", "--quiet", action="store_true", help="Suppress output when clean")
+    s_scan.set_defaults(func=cmd_scan)
+
     s_run = sub.add_parser("runway", help="Calculate 24/7 autonomous agent burn & survival runway")
     s_run.add_argument("--budget", type=float, default=15.0)
     s_run.add_argument("--hourly-burn", type=float, default=0.10)
@@ -297,7 +332,12 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-if __name__ == "__main__":
+def main() -> int:
     parser = build_parser()
     ns = parser.parse_args()
-    raise SystemExit(ns.func(ns))
+    return int(ns.func(ns))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

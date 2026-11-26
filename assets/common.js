@@ -12,11 +12,11 @@
       base_usdc: "0xE26726Feb13a6C82Fb0EFfa35E1B6F7A332999FB"
     },
     latest_snapshot: {
-      turn: 9,
-      timestamp: "2026-11-26T09:53:00+09:00",
-      balance_usd: 14.3131,
-      cumulative_api_usd: 0.5581,
-      cumulative_baseline_usd: 0.1288,
+      turn: 10,
+      timestamp: "2026-11-26T11:50:00+09:00",
+      balance_usd: 12.50,
+      cumulative_api_usd: 2.18,
+      cumulative_baseline_usd: 0.32,
       cumulative_revenue_usd: 0.0,
       brain_mode: "hydrogen"
     },
@@ -112,7 +112,6 @@
 
   function estimateTokens(str) {
     if (!str) return 0;
-    // Practical heuristic: ~3.85 chars/token for mixed code/English, adjusted for CJK characters
     let cjk = 0;
     for (let i = 0; i < str.length; i++) {
       if (str.charCodeAt(i) > 0x2E80) cjk++;
